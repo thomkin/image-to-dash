@@ -31,7 +31,10 @@ export class ImageToDash {
   /**
    * Start the image processing
    */
-  public async process(filename: string): Promise<ProcessResult> {
+  public async process(
+    filename: string,
+    contentId: string
+  ): Promise<ProcessResult> {
     const events = {
       onStart: () => this.events.onStart?.(),
       onSuccess: (output: string) => this.events.onSuccess?.(output),
@@ -40,12 +43,13 @@ export class ImageToDash {
         this.events.onRetry?.(attempt, error),
     };
 
-    return this.processWithRetry(events, filename);
+    return this.processWithRetry(events, filename, contentId);
   }
 
   private async processWithRetry(
     events: Required<ImageToDashEvents>,
-    filename: string
+    filename: string,
+    contentId: string
   ): Promise<ProcessResult> {
     events.onStart();
     this.isProcessing = true;
@@ -53,11 +57,9 @@ export class ImageToDash {
     let lastError: Error | null = null;
 
     while (this.currentAttempt <= this.options.maxRetries) {
-      console.log("Thomas: in the while loop");
       try {
-        console.log("Before the run container");
-        const result = await this.runContainer();
-        console.log("After the run container", result);
+        const result = await this.runContainer(contentId);
+
         if (result.success) {
           // Success case
           events.onSuccess?.(result.output || "");
@@ -77,11 +79,6 @@ export class ImageToDash {
       }
 
       // Check if we should retry
-      console.log(
-        "Thomas: should we retry?",
-        this.currentAttempt,
-        this.options.maxRetries
-      );
       if (this.currentAttempt < this.options.maxRetries) {
         events.onRetry?.(this.currentAttempt, lastError!);
         console.log("Thomas: we should retry", this.options.retryDelay);
@@ -124,7 +121,7 @@ export class ImageToDash {
     this.isProcessing = false;
   }
 
-  private async runContainer(): Promise<ProcessResult> {
+  private async runContainer(contentId: string): Promise<ProcessResult> {
     const {
       endpointUrl,
       accessKeyId,
@@ -145,19 +142,20 @@ export class ImageToDash {
 
     try {
       // Create a temporary directory for the workflow script
-      const tempDir = await fs.mkdtemp("/tmp/image-to-dash-");
+      // const tempDir = await fs.mkdtemp("/tmp/image-to-dash-");
+      const tempDir = "/tmp";
       const workflowScriptPath = path.join(tempDir, "workflow.sh");
 
       // Get the directory name of the current module
       const __filename = fileURLToPath(import.meta.url);
-      const __dirname = path.dirname(__filename);
+      // const __dirname = path.dirname(__filename);
 
       // Copy the workflow script to the temporary directory
-      const workflowScriptSource = path.resolve(
-        process.cwd(),
-        "podman_workflow.sh"
-      );
-      await fs.copyFile(workflowScriptSource, workflowScriptPath);
+      // const workflowScriptSource = path.resolve(
+      //   path.join(__dirname, ".."),
+      //   "podman_workflow.sh"
+      // );
+      // await fs.copyFile(workflowScriptSource, workflowScriptPath);
       await fs.chmod(workflowScriptPath, 0o755);
 
       const args = [
@@ -183,7 +181,7 @@ export class ImageToDash {
         aesIv,
         aesKey,
         String(clearLead),
-        `run-${Date.now()}`,
+        `${contentId}`,
       ];
 
       this.containerProcess = execa("podman", args, {

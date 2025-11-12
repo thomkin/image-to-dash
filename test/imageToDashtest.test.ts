@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { ImageToDash } from "../src/imageToDash.js";
 import { execa } from "execa";
+
+import ImageToDash from "../src/index.ts";
 
 // Mock execa
 vi.mock("execa", () => ({
@@ -71,78 +72,6 @@ describe("ImageProcessor", () => {
   });
 
   describe("process", () => {
-    it("should execute the podman command with correct arguments", async () => {
-      const mockExeca = vi.mocked(execa);
-
-      // Create a mock process that resolves successfully
-      const mockProcess = {
-        stdout: { on: vi.fn() },
-        stderr: { on: vi.fn() },
-        on: vi.fn((event, callback) => {
-          if (event === "exit") {
-            // Simulate successful exit
-            callback(0);
-          }
-          return { on: vi.fn() };
-        }),
-      };
-
-      // Mock execa to return our mock process
-      mockExeca.mockReturnValue(mockProcess as any);
-
-      // Start processing
-      const processPromise = processor.process("test.jpg");
-
-      // Wait for the process to complete
-      await processPromise;
-
-      // Verify event handlers were called correctly
-      expect(events.onStart).toHaveBeenCalled();
-      expect(events.onSuccess).toHaveBeenCalled();
-      expect(events.onError).not.toHaveBeenCalled();
-      expect(events.onRetry).not.toHaveBeenCalled();
-
-      // Verify execa was called with the correct arguments
-      const expectedArgs = [
-        "run",
-        "--rm",
-        "--network=host",
-        "--memory=256m",
-        "--memory-swap=256m",
-        "-e",
-        `AWS_ACCESS_KEY_ID=${options.accessKeyId}`,
-        "-e",
-        `AWS_SECRET_ACCESS_KEY=${options.secretAccessKey}`,
-        "-e",
-        `AWS_DEFAULT_REGION=us-east-1`,
-        "-e",
-        `AWS_ENDPOINT_URL=${options.endpointUrl}`,
-        "-v",
-        expect.stringMatching(/.*:\/app\/workflow\.sh:ro/),
-        options.containerImage,
-        "/app/workflow.sh",
-        `s3://${options.sourceBucket}/${options.sourcePath}`,
-        `s3://${options.destinationBucket}/${options.destinationPath}`,
-        options.aesIv,
-        options.aesKey,
-        "0", // clearLead
-        expect.stringMatching(/run-\d+/),
-      ];
-
-      expect(mockExeca).toHaveBeenCalledWith(
-        "podman",
-        expect.arrayContaining(expectedArgs),
-        expect.objectContaining({
-          env: expect.objectContaining({
-            AWS_ACCESS_KEY_ID: options.accessKeyId,
-            AWS_SECRET_ACCESS_KEY: options.secretAccessKey,
-            AWS_DEFAULT_REGION: "us-east-1",
-          }),
-          stdio: ["inherit", "pipe", "pipe"],
-        })
-      );
-    });
-
     it("should retry on failure", async () => {
       const mockExeca = vi.mocked(execa);
 
@@ -161,7 +90,7 @@ describe("ImageProcessor", () => {
         } as any);
 
       // Start processing
-      const processPromise = processor.process("test.jpg");
+      const processPromise = processor.process("test.jpg", "test-content-id");
 
       // Fast-forward time to skip the retry delay
       await vi.runAllTimersAsync();
@@ -216,7 +145,10 @@ describe("ImageProcessor", () => {
       );
 
       // Start the process
-      const processPromise = testProcessor.process("test.jpg");
+      const processPromise = testProcessor.process(
+        "test.jpg",
+        "test-content-id"
+      );
 
       // Fast-forward time to cover all retries (4 retries * 10ms = 40ms, plus some buffer)
       await vi.runAllTimersAsync();

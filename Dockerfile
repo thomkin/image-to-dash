@@ -23,6 +23,7 @@ ENV SHAKA_PACKAGER_PATH="/usr/local/bin/packager"
 
 # Set a working directory
 WORKDIR /app
+COPY podman_workflow.sh /tmp/workflow.sh
 
 # Set a default command that will run if no command is provided
 CMD ["sh"]

@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsc",
     "prepare": "pnpm run build",
-    "test": "vitest run",
+    "test": "cp ./podman_workflow.sh /tmp/workflow.sh && vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },

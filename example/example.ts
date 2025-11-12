@@ -1,7 +1,7 @@
-import { ImageProcessor } from "../dist/index.js";
+import ImageToDash from "../src/index.ts";
 
 async function runExample() {
-  const processor = new ImageProcessor(
+  const processor = new ImageToDash(
     {
       // Required parameters
       endpointUrl: "http://localhost:9000",
@@ -34,7 +34,7 @@ async function runExample() {
   try {
     console.log("Starting image processing...");
     const startTime = Date.now();
-    const result = await processor.process();
+    const result = await processor.process("test.jpg", "test-content-id");
     const executionTime = Date.now() - startTime;
     console.log(`Execution time: ${executionTime}ms`);
     console.log("Process completed:", result);

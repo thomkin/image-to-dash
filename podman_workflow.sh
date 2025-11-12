@@ -21,8 +21,8 @@ INPUT_IMAGE_FILE="/tmp/$FILENAME"
 OUTPUT_VIDEO_FILE="/tmp/${BASE_NAME}_temp.mp4"
 MANIFEST_NAME="$BASE_NAME.mpd"
 MASTER_PLAYLIST_NAME="$BASE_NAME.m3u8"
-VIDEO_STREAM_NAME="video.mp4"
-MASTER_PLAYLIST_VIDEO_NAME="video_master.m3u8"
+VIDEO_STREAM_NAME="${BASE_NAME}.video.mp4"
+MASTER_PLAYLIST_VIDEO_NAME="${BASE_NAME}.video_master.m3u8"
 
 # 3. Download the Image (using AWS CLI and IAM Role)
 echo "Downloading $FILENAME from S3..."
